@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Habiganj Doctor Directory</title>
+<style>
+:root{--blue:#155eef;--ink:#182230;--muted:#667085;--line:#e4e7ec;--bg:#f7f9fc}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif;color:var(--ink);background:var(--bg)}
+header{background:#123b70;color:white;padding:24px 16px}header .wrap,main{max-width:900px;margin:auto}
+h1{font-size:clamp(25px,5vw,36px);margin:0 0 6px}header p{margin:0;color:#dbeafe}
+main{padding:18px 14px 48px}.toolbar,.panel,.doctor{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:12px;border:1px solid #cfd4dc;border-radius:9px;margin:5px 0 10px;background:white}
+button{border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:white;font-weight:600;cursor:pointer;margin:4px 4px 4px 0}
+button.secondary{background:#eef4ff;color:#174ea6}button.danger{background:#b42318}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.doctor h3{margin:0 0 5px}.muted{color:var(--muted);font-size:14px}.doctor p{margin:5px 0}.tag{display:inline-block;background:#eff8ff;color:#175cd3;border-radius:20px;padding:3px 9px;font-size:13px}
+#admin{display:none}.empty{text-align:center;padding:28px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:20px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1 id="heading">হবিগঞ্জ ডাক্তার ডিরেক্টরি</h1>
+<p id="subheading">Habiganj Doctor Directory — ডাক্তার খুঁজুন সহজে</p>
+</div></header>
+<main>
+<section class="toolbar">
+<div class="row">
+<div><label for="lang">Language / ভাষা</label><select id="lang"><option value="bn">বাংলা</option><option value="en">English</option></select></div>
+<div><label for="area" id="areaLabel">উপজেলা</label><select id="area"><option value="">সব উপজেলা</option><option>হবিগঞ্জ সদর</option><option>চুনারুঘাট</option><option>মাধবপুর</option><option>বাহুবল</option><option>নবীগঞ্জ</option><option>বানিয়াচং</option><option>আজমিরীগঞ্জ</option><option>লাখাই</option><option>শায়েস্তাগঞ্জ</option></select></div>
+</div>
+<label for="search" id="searchLabel">ডাক্তারের নাম বা বিশেষজ্ঞতা দিয়ে খুঁজুন</label>
+<input id="search" placeholder="যেমন: মেডিসিন, হৃদরোগ, ডা. ...">
+<button class="secondary" id="adminBtn">Admin Panel</button>
+</section>
+<section id="doctorList"></section>
+<section class="panel" id="admin">
+<h2 id="adminTitle">ডাক্তার যোগ করুন</h2>
+<p class="muted">শুধু যাচাই করা তথ্য এবং ডাক্তারের অনুমতি নিয়ে তথ্য প্রকাশ করুন।</p>
+<form id="doctorForm">
+<label>ডাক্তারের নাম / Doctor name</label><input id="name" required>
+<label>বিশেষজ্ঞতা / Specialty</label><input id="specialty" required>
+<label>ডিগ্রি / Degree</label><input id="degree">
+<label>চেম্বার / Chamber</label><input id="chamber">
+<label>ঠিকানা বা উপজেলা / Area</label><input id="location">
+<label>সময় / Visiting hours</label><input id="hours">
+<label>ফোন নম্বর / Phone</label><input id="phone" inputmode="tel">
+<label>Google Maps link (optional)</label><input id="map" type="url" placeholder="https://maps.google.com/...">
+<button type="submit">Save Doctor</button><button type="button" class="secondary" id="cancelAdmin">Close</button>
+</form>
+</section>
+<footer>Habiganj Doctor Directory · তথ্য প্রকাশের আগে যাচাই করুন</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let doctors=JSON.parse(localStorage.getItem('habiganjDoctors')||'[]');
+function save(){localStorage.setItem('habiganjDoctors',JSON.stringify(doctors));render()}
+function render(){
+ const q=$('search').value.toLowerCase(),area=$('area').value;
+ const list=doctors.filter(d=>(!area||d.location===area)&&[d.name,d.specialty,d.degree,d.chamber,d.location].join(' ').toLowerCase().includes(q));
+ $('doctorList').innerHTML=list.length?list.map((d,i)=>`<article class="doctor"><h3>${esc(d.name)}</h3><span class="tag">${esc(d.specialty)}</span><p>${esc(d.degree||'')}</p><p><b>চেম্বার:</b> ${esc(d.chamber||'তথ্য নেই')}</p><p><b>এলাকা:</b> ${esc(d.location||'তথ্য নেই')}</p><p><b>সময়:</b> ${esc(d.hours||'তথ্য নেই')}</p><p>${d.phone?`<a href="tel:${esc(d.phone)}">📞 ${esc(d.phone)}</a>`:''} ${d.map?` · <a href="${esc(d.map)}" target="_blank" rel="noopener">Map</a>`:''}</p><button class="danger" onclick="removeDoctor(${doctors.indexOf(d)})">Delete</button></article>`).join(''):'<div class="panel empty">এখনো কোনো ডাক্তারের তথ্য যোগ করা হয়নি। Admin Panel থেকে তথ্য যোগ করুন।</div>';
+}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function removeDoctor(i){if(confirm('এই তথ্য মুছে ফেলবেন?')){doctors.splice(i,1);save()}}
+$('search').addEventListener('input',render);$('area').addEventListener('change',render);
+$('adminBtn').onclick=()=>$('admin').style.display=$('admin').style.display==='block'?'none':'block';
+$('cancelAdmin').onclick=()=>$('admin').style.display='none';
+$('doctorForm').onsubmit=e=>{e.preventDefault();doctors.push({name:$('name').value.trim(),specialty:$('specialty').value.trim(),degree:$('degree').value.trim(),chamber:$('chamber').value.trim(),location:$('location').value.trim(),hours:$('hours').value.trim(),phone:$('phone').value.trim(),map:$('map').value.trim()});save();e.target.reset();alert('Doctor saved on this device.');};
+$('lang').onchange=e=>{let en=e.target.value==='en';$('heading').textContent=en?'Habiganj Doctor Directory':'হবিগঞ্জ ডাক্তার ডিরেক্টরি';$('subheading').textContent=en?'Find doctors in Habiganj':'Habiganj Doctor Directory — ডাক্তার খুঁজুন সহজে';$('areaLabel').textContent=en?'Upazila':'উপজেলা';$('searchLabel').textContent=en?'Search by doctor name or specialty':'ডাক্তারের নাম বা বিশেষজ্ঞতা দিয়ে খুঁজুন';$('search').placeholder=en?'e.g. Medicine, Cardiology, Dr. ...':'যেমন: মেডিসিন, হৃদরোগ, ডা. ...'};
+render();
+</script>
+</body></html>
